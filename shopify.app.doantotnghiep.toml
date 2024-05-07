@@ -1,0 +1,29 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "1c80140224719ab28a48f02e9e30d04a"
+name = "doantotnghiep"
+handle = "doantotnghiep"
+application_url = "https://storage-cars-termination-missing.trycloudflare.com"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "quickstart-4631b2d9.myshopify.com"
+include_config_on_deploy = true
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_customers,read_discounts,read_files,read_orders,read_products,read_themes,write_customers,write_discounts,write_files,write_orders,write_products,write_themes"
+
+[auth]
+redirect_urls = [
+  "https://storage-cars-termination-missing.trycloudflare.com/auth/callback",
+  "https://storage-cars-termination-missing.trycloudflare.com/auth/shopify/callback",
+  "https://storage-cars-termination-missing.trycloudflare.com/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2024-01"
+
+[pos]
+embedded = false

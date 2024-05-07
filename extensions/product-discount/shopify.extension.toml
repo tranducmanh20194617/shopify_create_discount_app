@@ -1,0 +1,28 @@
+# Phiên bản API của Shopify mà mở rộng này hướng đến
+api_version = "2024-01"
+
+# Danh sách các mở rộng được định nghĩa trong tệp
+[[extensions]]
+
+# Mở rộng đầu tiên
+# Xác định một chức năng
+handle = "product-discount" # Định danh duy nhất của mở rộng
+name = "t:name" # Tên của mở rộng
+description = "t:description" # Mô tả ngắn về mở rộng
+type = "function" # Loại của mở rộng, ví dụ 'function' cho một chức năng
+
+# Phần này xác định cách xây dựng và triển khai của mở rộng
+[extensions.build]
+command = "" # Lệnh được sử dụng để xây dựng mở rộng
+path = "dist/function.wasm" # Đường dẫn đến tệp được tạo ra sau khi xây dựng
+
+# Phần xác định các mục tiêu của mở rộng, cụ thể là cách mở rộng sẽ được sử dụng và kết hợp với hệ thống Shopify
+[[extensions.targeting]]
+target = "purchase.product-discount.run" # Mục tiêu của mở rộng
+input_query = "src/run.graphql" # Đường dẫn đến tệp GraphQL đầu vào cho mở rộng
+export = "run" # Tên của một hàm hoặc phương thức mà mở rộng xuất khẩu
+
+# Phần xác định các đường dẫn UI cho mở rộng
+[extensions.ui.paths]
+create = "/app/volume-discount/:functionId/new" # Đường dẫn đến trang tạo mới cho mở rộng
+details = "/app/volume-discount/:functionId/:id" # Đường dẫn đến trang chi tiết cho mở rộng
