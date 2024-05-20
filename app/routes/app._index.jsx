@@ -1,28 +1,36 @@
 import { useEffect } from "react";
 import { json } from "@remix-run/node";
-import { useActionData, useNavigation, useSubmit } from "@remix-run/react";
+import {
+  useActionData,
+  useLoaderData,
+  useNavigation,
+  useSubmit,
+} from "@remix-run/react";
 import {
   Page,
   Layout,
   Text,
+  BlockStack,
   Card,
   Button,
-  BlockStack,
+  InlineStack,
   Box,
+  Divider,
   List,
   Link,
-  InlineStack,
 } from "@shopify/polaris";
-import { authenticate } from "../shopify.server";
+
+import { authenticate } from "~/shopify.server";
 
 export const loader = async ({ request }) => {
-  await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
 
-  return null;
+  return json({ shop: session.shop.replace(".myshopify.com", "") });
 };
 
-export const action = async ({ request }) => {
+export async function action({ request }) {
   const { admin } = await authenticate.admin(request);
+
   const color = ["Red", "Orange", "Yellow", "Green"][
     Math.floor(Math.random() * 4)
   ];
@@ -52,51 +60,30 @@ export const action = async ({ request }) => {
       variables: {
         input: {
           title: `${color} Snowboard`,
+          variants: [{ price: Math.random() * 100 }],
         },
       },
-    },
+    }
   );
+
   const responseJson = await response.json();
-  const variantId =
-    responseJson.data.productCreate.product.variants.edges[0].node.id;
-  const variantResponse = await admin.graphql(
-    `#graphql
-      mutation shopifyRemixTemplateUpdateVariant($input: ProductVariantInput!) {
-        productVariantUpdate(input: $input) {
-          productVariant {
-            id
-            price
-            barcode
-            createdAt
-          }
-        }
-      }`,
-    {
-      variables: {
-        input: {
-          id: variantId,
-          price: Math.random() * 100,
-        },
-      },
-    },
-  );
-  const variantResponseJson = await variantResponse.json();
 
   return json({
     product: responseJson.data.productCreate.product,
-    variant: variantResponseJson.data.productVariantUpdate.productVariant,
   });
-};
+}
 
 export default function Index() {
   const nav = useNavigation();
+  const { shop } = useLoaderData();
   const actionData = useActionData();
   const submit = useSubmit();
+
   const isLoading =
     ["loading", "submitting"].includes(nav.state) && nav.formMethod === "POST";
   const productId = actionData?.product?.id.replace(
     "gid://shopify/Product/",
-    "",
+    ""
   );
 
   useEffect(() => {
@@ -104,6 +91,7 @@ export default function Index() {
       shopify.toast.show("Product created");
     }
   }, [productId]);
+
   const generateProduct = () => submit({}, { replace: true, method: "POST" });
 
   return (
@@ -127,19 +115,17 @@ export default function Index() {
                     <Link
                       url="https://shopify.dev/docs/apps/tools/app-bridge"
                       target="_blank"
-                      removeUnderline
                     >
                       App Bridge
                     </Link>{" "}
                     interface examples like an{" "}
-                    <Link url="/app/additional" removeUnderline>
+                    <Link url="/app/additional">
                       additional page in the app nav
                     </Link>
                     , as well as an{" "}
                     <Link
                       url="https://shopify.dev/docs/api/admin-graphql"
                       target="_blank"
-                      removeUnderline
                     >
                       Admin GraphQL
                     </Link>{" "}
@@ -157,71 +143,47 @@ export default function Index() {
                     <Link
                       url="https://shopify.dev/docs/api/admin-graphql/latest/mutations/productCreate"
                       target="_blank"
-                      removeUnderline
                     >
                       productCreate
                     </Link>{" "}
                     mutation in our API references.
                   </Text>
                 </BlockStack>
-                <InlineStack gap="300">
-                  <Button loading={isLoading} onClick={generateProduct}>
-                    Generate a product
-                  </Button>
+                <InlineStack gap="300" align="end">
                   {actionData?.product && (
                     <Button
-                      url={`shopify:admin/products/${productId}`}
+                      url={`https://admin.shopify.com/store/${shop}/admin/products/${productId}`}
                       target="_blank"
-                      variant="plain"
                     >
                       View product
                     </Button>
                   )}
+                  <Button
+                    loading={isLoading}
+                    variant="primary"
+                    onClick={generateProduct}
+                  >
+                    Generate a product
+                  </Button>
                 </InlineStack>
                 {actionData?.product && (
-                  <>
-                    <Text as="h3" variant="headingMd">
-                      {" "}
-                      productCreate mutation
-                    </Text>
-                    <Box
-                      padding="400"
-                      background="bg-surface-active"
-                      borderWidth="025"
-                      borderRadius="200"
-                      borderColor="border"
-                      overflowX="scroll"
-                    >
-                      <pre style={{ margin: 0 }}>
-                        <code>
-                          {JSON.stringify(actionData.product, null, 2)}
-                        </code>
-                      </pre>
-                    </Box>
-                    <Text as="h3" variant="headingMd">
-                      {" "}
-                      productVariantUpdate mutation
-                    </Text>
-                    <Box
-                      padding="400"
-                      background="bg-surface-active"
-                      borderWidth="025"
-                      borderRadius="200"
-                      borderColor="border"
-                      overflowX="scroll"
-                    >
-                      <pre style={{ margin: 0 }}>
-                        <code>
-                          {JSON.stringify(actionData.variant, null, 2)}
-                        </code>
-                      </pre>
-                    </Box>
-                  </>
+                  <Box
+                    padding="400"
+                    background="bg-surface-active"
+                    borderColor="border"
+                    borderWidth="100"
+                    borderRadius="200"
+                    overflowX="scroll"
+                  >
+                    <pre style={{ margin: 0 }}>
+                      <code>{JSON.stringify(actionData.product, null, 2)}</code>
+                    </pre>
+                  </Box>
                 )}
               </BlockStack>
             </Card>
           </Layout.Section>
-          <Layout.Section variant="oneThird">
+          <Layout.Section>
             <BlockStack gap="500">
               <Card>
                 <BlockStack gap="200">
@@ -229,52 +191,43 @@ export default function Index() {
                     App template specs
                   </Text>
                   <BlockStack gap="200">
+                    <Divider />
                     <InlineStack align="space-between">
                       <Text as="span" variant="bodyMd">
                         Framework
                       </Text>
-                      <Link
-                        url="https://remix.run"
-                        target="_blank"
-                        removeUnderline
-                      >
+                      <Link url="https://remix.run" target="_blank">
                         Remix
                       </Link>
                     </InlineStack>
+                    <Divider />
                     <InlineStack align="space-between">
                       <Text as="span" variant="bodyMd">
                         Database
                       </Text>
-                      <Link
-                        url="https://www.prisma.io/"
-                        target="_blank"
-                        removeUnderline
-                      >
+                      <Link url="https://www.prisma.io/" target="_blank">
                         Prisma
                       </Link>
                     </InlineStack>
+                    <Divider />
                     <InlineStack align="space-between">
                       <Text as="span" variant="bodyMd">
                         Interface
                       </Text>
                       <span>
-                        <Link
-                          url="https://polaris.shopify.com"
-                          target="_blank"
-                          removeUnderline
-                        >
+                        <Link url="https://polaris.shopify.com" target="_blank">
                           Polaris
                         </Link>
                         {", "}
                         <Link
                           url="https://shopify.dev/docs/apps/tools/app-bridge"
                           target="_blank"
-                          removeUnderline
                         >
                           App Bridge
                         </Link>
                       </span>
                     </InlineStack>
+                    <Divider />
                     <InlineStack align="space-between">
                       <Text as="span" variant="bodyMd">
                         API
@@ -282,7 +235,6 @@ export default function Index() {
                       <Link
                         url="https://shopify.dev/docs/api/admin-graphql"
                         target="_blank"
-                        removeUnderline
                       >
                         GraphQL API
                       </Link>
@@ -301,7 +253,6 @@ export default function Index() {
                       <Link
                         url="https://shopify.dev/docs/apps/getting-started/build-app-example"
                         target="_blank"
-                        removeUnderline
                       >
                         {" "}
                         example app
@@ -313,7 +264,6 @@ export default function Index() {
                       <Link
                         url="https://shopify.dev/docs/apps/tools/graphiql-admin-api"
                         target="_blank"
-                        removeUnderline
                       >
                         GraphiQL
                       </Link>

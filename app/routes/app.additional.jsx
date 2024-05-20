@@ -1,3 +1,7 @@
+// @ts-nocheck
+import { useQuery } from '@apollo/client';
+import {useEffect} from "react";
+
 import {
   Box,
   Card,
@@ -8,8 +12,41 @@ import {
   Text,
   BlockStack,
 } from "@shopify/polaris";
+import {GET_ID_FUNCTION} from "~/graphql/query";
+import {authenticate} from "~/shopify.server";
+import {json} from "@remix-run/node";
+import {useActionData} from "@remix-run/react";
+export async function action({ request }) {
+  const { admin } = await authenticate.admin(request);
 
+  const response = await admin.graphql(
+    `#graphql
+      query {
+  shopifyFunctions(first: 25) {
+    nodes {
+      app {
+        title
+      }
+      apiType
+      title
+      id
+    }
+  }
+}`
+  );
+
+  const responseJson = await response.json();
+
+  return json({
+    product: responseJson,
+  });
+}
 export default function AdditionalPage() {
+  const actionData = useActionData();
+  useEffect(() => {
+    console.log(actionData)
+  }, [actionData]);
+
   return (
     <Page>
       <ui-title-bar title="Additional page" />
@@ -24,7 +61,6 @@ export default function AdditionalPage() {
                 <Link
                   url="https://shopify.dev/docs/apps/tools/app-bridge"
                   target="_blank"
-                  removeUnderline
                 >
                   App Bridge
                 </Link>
@@ -39,18 +75,17 @@ export default function AdditionalPage() {
             </BlockStack>
           </Card>
         </Layout.Section>
-        <Layout.Section variant="oneThird">
+        <Layout.Section>
           <Card>
             <BlockStack gap="200">
               <Text as="h2" variant="headingMd">
                 Resources
               </Text>
-              <List>
+              <List gap="extraTight">
                 <List.Item>
                   <Link
                     url="https://shopify.dev/docs/apps/design-guidelines/navigation#app-nav"
                     target="_blank"
-                    removeUnderline
                   >
                     App nav best practices
                   </Link>
@@ -72,7 +107,7 @@ function Code({ children }) {
       paddingInlineStart="100"
       paddingInlineEnd="100"
       background="bg-surface-active"
-      borderWidth="025"
+      borderWidth="100"
       borderColor="border"
       borderRadius="100"
     >
